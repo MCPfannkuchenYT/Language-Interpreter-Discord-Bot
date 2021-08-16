@@ -1,0 +1,17 @@
+# Ignore Gradle project-specific cache directory
+.gradle
+
+# Ignore Gradle build output directory
+build
+
+# Eclipse Files
+bin
+.settings
+.classpath
+.project
+
+# IDEA Files
+out
+
+# Token
+token
