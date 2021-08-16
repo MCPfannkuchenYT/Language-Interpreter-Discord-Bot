@@ -43,7 +43,10 @@ public class Utils {
 		});
 		try {
 			ByteArrayOutputStream out = s.get(timeoutInSeconds, TimeUnit.SECONDS);
-			if (runAfter != null) runAfter.apply(false);
+			if (runAfter != null) {
+				runAfter.apply(false);
+				runAfter = null;
+			}
 			return out.toString();
 		} catch (Exception e) {
 			if (runAfter != null) runAfter.apply(true);

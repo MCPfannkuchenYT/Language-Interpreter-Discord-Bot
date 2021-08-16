@@ -33,17 +33,17 @@ public class LangInterpreter extends ListenerAdapter {
 			try {
 				if (event.getMessage().getContentRaw().toLowerCase().startsWith("!brainfuck")) {
 					String brainfuckString = event.getMessage().getContentRaw().replaceFirst("!brainfuck ", "");
-					executeBrainfuckEvent(brainfuckString, brainfuckString.startsWith("fast "), event.getTextChannel());
-				}
-				if (event.getMessage().getContentRaw().toLowerCase().startsWith("!bf")) {
+					executeBrainfuckEvent(brainfuckString, event.getTextChannel());
+				} else if (event.getMessage().getContentRaw().toLowerCase().startsWith("!bf")) {
 					String brainfuckString = event.getMessage().getContentRaw().replaceFirst("!bf ", "");
-					executeBrainfuckEvent(brainfuckString, brainfuckString.startsWith("fast "), event.getTextChannel());
-				}
-				if (event.getMessage().getAttachments().size() != 0) if (event.getMessage().getAttachments().get(0).getFileExtension().equalsIgnoreCase("b") || event.getMessage().getAttachments().get(0).getFileExtension().equalsIgnoreCase("bf")) {
-					System.out.println("Downloading Brainfuck Code...");
-					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					Utils.copyLarge(event.getMessage().getAttachments().get(0).retrieveInputStream().get(), baos, new byte[4096]);
-					executeBrainfuckEvent(baos.toString(), true, event.getTextChannel());
+					executeBrainfuckEvent(brainfuckString, event.getTextChannel());
+				} else if (event.getMessage().getAttachments().size() != 0) {
+					if (event.getMessage().getAttachments().get(0).getFileExtension().equalsIgnoreCase("b") || event.getMessage().getAttachments().get(0).getFileExtension().equalsIgnoreCase("bf")) {
+						System.out.println("Downloading Brainfuck Code...");
+						ByteArrayOutputStream baos = new ByteArrayOutputStream();
+						Utils.copyLarge(event.getMessage().getAttachments().get(0).retrieveInputStream().get(), baos, new byte[4096]);
+						executeBrainfuckEvent(baos.toString(), event.getTextChannel());
+					}
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -58,10 +58,10 @@ public class LangInterpreter extends ListenerAdapter {
 	 * @param respond Channel to respond in
 	 * @throws IOException Throws randomly lol
 	 */
-	private static void executeBrainfuckEvent(String brainfuckString, boolean isFast, TextChannel respond) throws IOException {
+	private static void executeBrainfuckEvent(String brainfuckString, TextChannel respond) throws IOException {
 		Message m = respond.sendMessage(new EmbedBuilder().setAuthor("Your Brainfuck Code is being executed.. please wait.").setTitle("Brainfuck Compilation Status").setDescription(":white_check_mark: Read Brainfuck Code \n" + 
 				":pencil: Interpret Brainfuck Code as C\n" + 
-				":x: Compile C Code" + (isFast ? " (with -O3)" : "") + "\n" + 
+				":x: Compile C Code (with -O3)\n" + 
 				":x: Execute the program").build()).complete();
 		/* Interpreting the Brainfuck Code as C Code */
 		String cString = "#include <stdio.h>\n#include <stdint.h>\n#include <stdlib.h>\n#undef putchar\n\nint main() {\n    char *p = malloc(30000);\n";
@@ -81,17 +81,17 @@ public class LangInterpreter extends ListenerAdapter {
 		/* Compiling C Code */
 	    m.editMessage(new EmbedBuilder().setAuthor("Your Brainfuck Code is being executed.. please wait.").setTitle("Brainfuck Compilation Status").setDescription(":white_check_mark: Read Brainfuck Code \n" + 
 				":white_check_mark: Interpret Brainfuck Code as C\n" + 
-				":pencil: Compile C Code" + (isFast ? " (with -O3)" : "") + "\n" + 
+				":pencil: Compile C Code (with -O3)\n" + 
 				":x: Execute the program").build()).complete();
 	    System.out.println("Compiling C Code...");
 	    File c_file = File.createTempFile("brainfuck", ".c");
 		Files.write(c_file.toPath(), cString.getBytes());
 		File out_file = File.createTempFile("brainfuck", "");
-		Utils.run("/usr/bin/gcc " + c_file.getAbsolutePath().replaceFirst("C\\:", "/mnt/c").replaceFirst("\\\\", "/") + " -o " + out_file.getAbsolutePath().replaceFirst("C\\:", "/mnt/c").replaceFirst("\\\\", "/") + " " + (isFast ? "-O3" : ""), false, 60, (didFail) -> {
+		Utils.run("/usr/bin/gcc " + c_file.getAbsolutePath().replaceFirst("C\\:", "/mnt/c").replaceFirst("\\\\", "/") + " -o " + out_file.getAbsolutePath().replaceFirst("C\\:", "/mnt/c").replaceFirst("\\\\", "/") + " " + "-O3", false, 60, (didFail) -> {
 			if (didFail) {
 				m.editMessage(new EmbedBuilder().setAuthor("Your Brainfuck Code is being executed.. please wait.").setTitle("Brainfuck Compilation Status").setDescription(":white_check_mark: Read Brainfuck Code \n" + 
 						":white_check_mark: Interpret Brainfuck Code as C\n" + 
-						":x: Compile C Code" + (isFast ? " (with -O3)" : "") + "\n" + 
+						":x: Compile C Code (with -O3)\n" + 
 						":x: Execute the program [CANCELLED]").build()).complete();
 				return false; // return anything
 			}
@@ -99,23 +99,22 @@ public class LangInterpreter extends ListenerAdapter {
 			/* Execute C Code */
 			m.editMessage(new EmbedBuilder().setAuthor("Your Brainfuck Code is being executed.. please wait.").setTitle("Brainfuck Compilation Status").setDescription(":white_check_mark: Read Brainfuck Code \n" + 
 					":white_check_mark: Interpret Brainfuck Code as C\n" + 
-					":white_check_mark: Compile C Code" + (isFast ? " (with -O3)" : "") + "\n" + 
+					":white_check_mark: Compile C Code (with -O3)\n" + 
 					":pencil: Execute the program").build()).complete();
 			System.out.println("Running compiled Code");
-			String brainfuckOutput = Utils.run("./latestBrainfuck", true, 60L, null);
+			String brainfuckOutput = Utils.run(out_file.getAbsolutePath().replaceFirst("C\\:", "/mnt/c").replaceFirst("\\\\", "/"), true, 60L, null);
 			System.out.println("Printing Results");
 			if (brainfuckOutput == null) {
 				m.editMessage(new EmbedBuilder().setAuthor("Your Brainfuck Code is being executed.. please wait.").setTitle("Brainfuck Compilation Status").setDescription(":white_check_mark: Read Brainfuck Code \n" + 
 						":white_check_mark: Interpret Brainfuck Code as C\n" + 
-						":white_check_mark: Compile C Code" + (isFast ? " (with -O3)" : "") + "\n" + 
+						":white_check_mark: Compile C Code (with -O3)\n" + 
 						":x: Execute the program").build()).complete();
 				respond.sendMessage("Your Code ran exceeded the compile&execute time limit.. too bad. ").queue();
 			} else {
 				m.editMessage(new EmbedBuilder().setAuthor("Your Brainfuck Code is being executed.. please wait.").setTitle("Brainfuck Compilation Status").setDescription(":white_check_mark: Read Brainfuck Code \n" + 
 						":white_check_mark: Interpret Brainfuck Code as C\n" + 
-						":white_check_mark: Compile C Code" + (isFast ? " (with -O3)" : "") + "\n" + 
+						":white_check_mark: Compile C Code (with -O3)\n" + 
 						":white_check_mark: Execute the program").build()).complete();
-				if (!isFast) respond.sendMessage("Consider running `!brainfuck fast <code>` for optimized and faster Code.\n").queue();
 				printLongMessage(brainfuckOutput, respond);
 				respond.sendMessage("Your Code was successfully executed").queue();
 			}
